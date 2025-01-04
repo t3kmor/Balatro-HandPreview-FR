@@ -1,8 +1,8 @@
 --- STEAMODDED HEADER
 --- MOD_NAME: Hand Preview
 --- MOD_ID: handpreview
---- MOD_AUTHOR: [Toeler]
---- MOD_DESCRIPTION: A utility mod to list the hands that you can make. v1.0.0
+--- MOD_AUTHOR: [Toeler (traduit par t3kmor)]
+--- MOD_DESCRIPTION: Un mod pour lister les mains que vous pouvez faire. Basé sur la version v1.0.0
 
 ----------------------------------------------
 ------------MOD CODE -------------------------
@@ -24,10 +24,26 @@ function SMODS.INIT.handpreview()
 		}
 	end
 	HandPreview.settings = G.SETTINGS.HandPreview
+	
+	local hand_translations = {
+		["Flush Five"] = "Pentacle flush",
+		["Flush House"] = "Full flush",
+		["Five of a Kind"] = "Pentacle",
+		["Royal Flush"] = "Quinte flush royale",
+		["Straight Flush"] = "Quinte flush",
+		["Four of a Kind"] = "Carré",
+		["Full House"] = "Full",
+		["Flush"] = "Couleur",
+		["Straight"] = "Quinte",
+		["Three of a Kind"] = "Brelan",
+		["Two Pair"] = "Double Paire",
+		["Pair"] = "Paire",
+		["High Card"] = "Carte Haute"
+	}
 
 	local balalib_mod = SMODS.findModByID("balalib")
 	if not balalib_mod then
-		error("Hand Preview requires BalaLib mod to be installed")
+		error("Hand Preview nécessite le mod BalaLib pour fonctionner")
 	end
 
 	local orig_sendDebugMessage = sendDebugMessage
@@ -51,7 +67,7 @@ function SMODS.INIT.handpreview()
 		args.header = {
 			n = G.UIT.T,
 			config = {
-				text = 'Possible Hands',
+				text = 'Mains jouables :',
 				scale = 0.3,
 				colour = G.C.WHITE
 			}
@@ -219,6 +235,59 @@ function SMODS.INIT.handpreview()
 
 		return unique_hands
 	end
+	
+	local function translate_hand_type(hand_type)
+        return hand_translations[hand_type] or hand_type
+    end
+	
+	local function translate_card_value(value)
+		local value_translations = {
+			["Ace"] = "As",
+			["Aces"] = "As",
+			["King"] = "Roi",
+			["Kings"] = "Rois",
+			["Queen"] = "Reine",
+			["Queens"] = "Reines",
+			["Jack"] = "Valet",
+			["Jacks"] = "Valets",
+			["10"] = "10",
+			["10s"] = "10",
+			["9"] = "9",
+			["9s"] = "9",
+			["8"] = "8",
+			["8s"] = "8",
+			["7"] = "7",
+			["7s"] = "7",
+			["6"] = "6",
+			["6s"] = "6",
+			["5"] = "5",
+			["5s"] = "5",
+			["4"] = "4",
+			["4s"] = "4",
+			["3"] = "3",
+			["3s"] = "3",
+			["2"] = "2",
+			["2s"] = "2"
+		}
+		return value_translations[value] or value
+	end
+
+	local function translate_suit(suit)
+		local suit_translations = {
+			["Hearts"] = "Cœurs",
+			["Diamonds"] = "Carreaux",
+			["Clubs"] = "Trèfles",
+			["Spades"] = "Piques"
+		}
+		return suit_translations[suit] or suit
+	end
+
+	local function translate_description(description)
+		return description:gsub("(%w+)", function(word)
+			local tmpword = translate_card_value(word)
+			return translate_suit(tmpword)
+		end)
+	end
 
 	local function display_hands(unique_hands)
 		local order = { "Flush Five", "Flush House", "Five of a Kind", "Royal Flush", "Straight Flush",
@@ -306,8 +375,14 @@ function SMODS.INIT.handpreview()
 					return a_high > b_high
 				end)
 
-				local descriptions = table.concat(grouped_hands[hand_type], ", ")
-				local handInfo = hand_type
+				-- Traduction de chaque description
+				local translated_descriptions = {}
+				for i, description in ipairs(grouped_hands[hand_type]) do
+					translated_descriptions[i] = translate_description(description)
+				end
+
+				local descriptions = table.concat(translated_descriptions, ", ")
+				local handInfo = translate_hand_type(hand_type)
 				if includeDescriptions then
 					handInfo = handInfo .. ": " .. descriptions
 				end
@@ -400,7 +475,7 @@ function SMODS.INIT.handpreview()
 						{
 							n = G.UIT.T,
 							config = {
-								text = "Hand Preview Settings",
+								text = "Paramètres",
 								scale = 0.6,
 								colour = G.C.UI.TEXT_LIGHT
 							}
@@ -415,7 +490,7 @@ function SMODS.INIT.handpreview()
 					nodes = {
 						create_option_cycle({
 							id = "hand_preview_preview_count",
-							label = "Preview Count",
+							label = "Nombre de combinaisons",
 							scale = 0.8,
 							w = 1.2,
 							options = { 0, 1, 2, 3, 4, 5 },
@@ -440,7 +515,7 @@ function SMODS.INIT.handpreview()
 					nodes = {
 						create_toggle({
 							id = "hand_preview_include_breakdown_toggle",
-							label = "Include Face-Down Cards",
+							label = "Inclure les cartes face cachées",
 							ref_table = G.SETTINGS.HandPreview,
 							ref_value = "include_facedown"
 						})
@@ -454,7 +529,7 @@ function SMODS.INIT.handpreview()
 					nodes = {
 						create_toggle({
 							id = "hand_preview_include_breakdown_toggle",
-							label = "Include Hand Breakdown",
+							label = "Afficher les combinaisons",
 							ref_table = G.SETTINGS.HandPreview,
 							ref_value = "include_breakdown"
 						})
@@ -466,7 +541,7 @@ function SMODS.INIT.handpreview()
 						align = 'cm'
 					},
 					nodes = {
-						UIBox_button { label = { "Reset window position" }, button = "hand_preview_reset_position", minw = 1.7, minh = 0.4, scale = 0.35 }
+						UIBox_button { label = { "Réinitialiser la position" }, button = "hand_preview_reset_position", minw = 1.7, minh = 0.4, scale = 0.35 }
 					}
 				},
 			} }),
@@ -523,7 +598,7 @@ function SMODS.INIT.handpreview()
 													{
 														n = G.UIT.T,
 														config = {
-															text = 'Hand Preview Settings',
+															text = 'Paramètres',
 															scale = 0.3,
 															colour = G.C.UI.TEXT_LIGHT
 														}
@@ -549,7 +624,7 @@ function SMODS.INIT.handpreview()
 																	{
 																		n = G.UIT.T,
 																		config = {
-																			text = 'Preview Count: ' ..
+																			text = 'Nombre de combinaisons: ' ..
 																				tostring(get_setting('preview_count')),
 																			scale = 0.15,
 																			colour = G.C.UI.TEXT_LIGHT
@@ -563,7 +638,7 @@ function SMODS.INIT.handpreview()
 																	{
 																		n = G.UIT.T,
 																		config = {
-																			text = 'Include Face-Down: ' ..
+																			text = 'Inclure les cartes face cachées: ' ..
 																				(get_setting('include_facedown') and 'Yes' or 'No'),
 																			scale = 0.15,
 																			colour = G.C.UI.TEXT_LIGHT
@@ -589,9 +664,9 @@ function SMODS.INIT.handpreview()
 																	{
 																		n = G.UIT.T,
 																		config = {
-																			text = 'Include Breakdown: ' ..
+																			text = 'Afficher les combinaisons: ' ..
 																				(get_setting('include_breakdown') and 'Yes' or 'No'),
-																			scale = 0.15,
+																			scale = 0.15, 
 																			colour = G.C.UI.TEXT_LIGHT
 																		}
 																	}
